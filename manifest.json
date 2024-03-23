@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "新的一页",
+  "version": "1.0",
+  "description": "A new tab extension with background image from bing and support multi search engines.",
+  "icons": {
+    "16": "src/icon16.png",
+    "48": "src/icon48.png",
+    "128": "src/icon128.png"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "src/icon16.png"
+  },
+  "default_locale": "zh_CN",
+  "permissions": ["activeTab", "storage"],
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  }
+}
