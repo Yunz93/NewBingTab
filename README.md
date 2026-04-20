@@ -35,6 +35,14 @@
 4. 点击“加载已解压的扩展程序”。
 5. 选择当前项目目录。
 
+## GitHub Actions
+
+- 仓库已配置 [`.github/workflows/build-extension.yml`](.github/workflows/build-extension.yml)
+- 每次 `push` 和 `pull_request` 都会自动校验 `manifest.json` 并打包扩展
+- 构建产物会作为 Actions Artifact 上传，名称为 `chrome-extension-package`
+- 推送形如 `v1.0.0` 的 tag 时，会触发 [`.github/workflows/release-extension.yml`](.github/workflows/release-extension.yml) 自动创建 GitHub Release 并上传 zip
+- 本地也可以直接运行 `bash scripts/package-extension.sh`，产物会输出到 `dist/`
+
 ## 手动验证清单
 
 - 首次打开新标签页时，页面能正常展示搜索面板

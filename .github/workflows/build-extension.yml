@@ -1,0 +1,31 @@
+name: Build Chrome Extension
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Validate manifest.json
+        run: python3 -m json.tool manifest.json > /dev/null
+
+      - name: Package extension
+        run: bash scripts/package-extension.sh
+
+      - name: Upload packaged extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension-package
+          path: dist/*.zip
+          if-no-files-found: error
