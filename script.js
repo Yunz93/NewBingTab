@@ -4,13 +4,18 @@ const STORAGE_KEYS = {
   migrated: "legacyStorageMigrated",
 };
 
-const WALLPAPER_ENDPOINT = "https://bing.img.run/rand.php";
+const BING_WALLPAPER_API =
+  "https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN";
 const FETCH_TIMEOUT_MS = 6000;
 const IMAGE_TIMEOUT_MS = 8000;
 
 const state = {
   searchForm: null,
   searchEngine: null,
+  searchEngineToggle: null,
+  searchEngineLabel: null,
+  searchEngineMenu: null,
+  searchEngineOptions: [],
   searchInput: null,
   statusMessage: null,
 };
@@ -27,7 +32,10 @@ async function init() {
 
   const selectedSearchEngine = await getStoredValue(STORAGE_KEYS.searchEngine);
   if (isKnownSearchEngine(selectedSearchEngine)) {
-    state.searchEngine.value = selectedSearchEngine;
+    const selectedOption = state.searchEngineOptions.find(
+      (option) => option.dataset.value === selectedSearchEngine
+    );
+    setSelectedSearchEngine(selectedSearchEngine, selectedOption.dataset.label);
   }
 
   state.searchInput.focus();
@@ -47,17 +55,28 @@ async function init() {
 function cacheDomElements() {
   state.searchForm = document.getElementById("search-form");
   state.searchEngine = document.getElementById("search-engine");
+  state.searchEngineToggle = document.getElementById("search-engine-toggle");
+  state.searchEngineLabel = document.getElementById("search-engine-label");
+  state.searchEngineMenu = document.getElementById("search-engine-menu");
+  state.searchEngineOptions = Array.from(
+    document.querySelectorAll(".search-select-option")
+  );
   state.searchInput = document.getElementById("search-input");
   state.statusMessage = document.getElementById("status-message");
 }
 
 function bindEvents() {
   state.searchForm.addEventListener("submit", handleSearchSubmit);
-  state.searchEngine.addEventListener("change", handleSearchEngineChange);
-}
-
-async function handleSearchEngineChange(event) {
-  await setStoredValue(STORAGE_KEYS.searchEngine, event.target.value);
+  state.searchEngineToggle.addEventListener("click", handleSearchEngineToggle);
+  state.searchEngineToggle.addEventListener(
+    "keydown",
+    handleSearchEngineToggleKeydown
+  );
+  state.searchEngineOptions.forEach((option) => {
+    option.addEventListener("click", handleSearchEngineOptionClick);
+  });
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
 }
 
 function handleSearchSubmit(event) {
@@ -72,18 +91,53 @@ function handleSearchSubmit(event) {
 
   clearStatus();
 
-  const baseUrl = state.searchEngine.value;
+  const baseUrl = getSelectedSearchEngineValue();
   window.location.href = `${baseUrl}${encodeURIComponent(query)}`;
+}
+
+function handleSearchEngineToggle() {
+  const isOpen = state.searchEngineToggle.getAttribute("aria-expanded") === "true";
+  setSearchMenuOpen(!isOpen);
+}
+
+function handleSearchEngineToggleKeydown(event) {
+  if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    setSearchMenuOpen(true);
+    focusSelectedSearchEngineOption();
+  }
+}
+
+async function handleSearchEngineOptionClick(event) {
+  const option = event.currentTarget;
+  const value = option.dataset.value;
+  const label = option.dataset.label;
+
+  setSelectedSearchEngine(value, label);
+  setSearchMenuOpen(false);
+  state.searchEngineToggle.focus();
+
+  await setStoredValue(STORAGE_KEYS.searchEngine, value);
+}
+
+function handleDocumentClick(event) {
+  if (state.searchEngine.contains(event.target)) {
+    return;
+  }
+
+  setSearchMenuOpen(false);
+}
+
+function handleDocumentKeydown(event) {
+  if (event.key === "Escape") {
+    setSearchMenuOpen(false);
+    state.searchEngineToggle.blur();
+  }
 }
 
 async function refreshWallpaper(hasCachedWallpaper) {
   try {
-    const response = await fetchWithTimeout(WALLPAPER_ENDPOINT, FETCH_TIMEOUT_MS);
-    const imageUrl = response.url?.trim();
-
-    if (!imageUrl) {
-      throw new Error("Missing wallpaper URL in response.");
-    }
+    const imageUrl = await fetchLatestWallpaperUrl();
 
     await preloadImage(imageUrl, IMAGE_TIMEOUT_MS);
     applyBackgroundImage(imageUrl);
@@ -106,6 +160,23 @@ async function refreshWallpaper(hasCachedWallpaper) {
     clearBackgroundImage();
     setStatus("壁纸加载失败，已回退到默认背景。", true);
   }
+}
+
+async function fetchLatestWallpaperUrl() {
+  const response = await fetchWithTimeout(BING_WALLPAPER_API, FETCH_TIMEOUT_MS);
+
+  if (!response.ok) {
+    throw new Error(`Wallpaper API responded with ${response.status}.`);
+  }
+
+  const payload = await response.json();
+  const imagePath = payload?.images?.[0]?.url?.trim();
+
+  if (!imagePath) {
+    throw new Error("Missing wallpaper URL in response.");
+  }
+
+  return new URL(imagePath, "https://cn.bing.com").toString();
 }
 
 function applyBackgroundImage(imageUrl) {
@@ -138,9 +209,37 @@ function isFreshWallpaper(wallpaperCache) {
 }
 
 function isKnownSearchEngine(value) {
-  return Array.from(state.searchEngine.options).some(
-    (option) => option.value === value
+  return state.searchEngineOptions.some(
+    (option) => option.dataset.value === value
   );
+}
+
+function getSelectedSearchEngineValue() {
+  return state.searchEngine.dataset.value;
+}
+
+function setSelectedSearchEngine(value, label) {
+  state.searchEngine.dataset.value = value;
+  state.searchEngineLabel.textContent = label;
+
+  state.searchEngineOptions.forEach((option) => {
+    const isSelected = option.dataset.value === value;
+    option.classList.toggle("is-selected", isSelected);
+    option.setAttribute("aria-selected", String(isSelected));
+  });
+}
+
+function setSearchMenuOpen(isOpen) {
+  state.searchEngineToggle.setAttribute("aria-expanded", String(isOpen));
+  state.searchEngineMenu.hidden = !isOpen;
+}
+
+function focusSelectedSearchEngineOption() {
+  const selectedOption = state.searchEngineOptions.find((option) =>
+    option.classList.contains("is-selected")
+  );
+
+  selectedOption?.focus();
 }
 
 function fetchWithTimeout(url, timeoutMs) {

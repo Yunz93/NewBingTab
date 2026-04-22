@@ -10,15 +10,56 @@
 <body>
   <main class="page-shell">
     <section class="search-panel" aria-label="新标签页搜索面板">
-      <p class="eyebrow">New Bing Tab</p>
-      <h1 class="panel-title">打开新标签页，直接开始搜索</h1>
       <form id="search-form" class="search-form" novalidate>
-        <label class="sr-only" for="search-engine">选择搜索引擎</label>
-        <select id="search-engine" class="search-select" title="选择搜索引擎">
-          <option value="https://www.google.com/search?q=">Google</option>
-          <option value="https://www.bing.com/search?q=">Bing</option>
-          <option value="https://www.baidu.com/s?wd=">Baidu</option>
-        </select>
+        <div class="search-engine" id="search-engine" data-value="https://www.google.com/search?q=">
+          <label class="sr-only" for="search-engine-toggle">选择搜索引擎</label>
+          <button
+            type="button"
+            id="search-engine-toggle"
+            class="search-select search-select-toggle"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-controls="search-engine-menu"
+          >
+            <span class="search-select-label" id="search-engine-label">Google</span>
+            <span class="search-select-icon" aria-hidden="true"></span>
+          </button>
+          <div class="search-select-menu" id="search-engine-menu" role="listbox" hidden>
+            <button
+              type="button"
+              class="search-select-option is-selected"
+              role="option"
+              aria-selected="true"
+              data-label="Google"
+              data-value="https://www.google.com/search?q="
+            >
+              <span class="search-select-check" aria-hidden="true">✓</span>
+              <span class="search-select-option-label">Google</span>
+            </button>
+            <button
+              type="button"
+              class="search-select-option"
+              role="option"
+              aria-selected="false"
+              data-label="Bing"
+              data-value="https://www.bing.com/search?q="
+            >
+              <span class="search-select-check" aria-hidden="true">✓</span>
+              <span class="search-select-option-label">Bing</span>
+            </button>
+            <button
+              type="button"
+              class="search-select-option"
+              role="option"
+              aria-selected="false"
+              data-label="Baidu"
+              data-value="https://www.baidu.com/s?wd="
+            >
+              <span class="search-select-check" aria-hidden="true">✓</span>
+              <span class="search-select-option-label">Baidu</span>
+            </button>
+          </div>
+        </div>
 
         <label class="sr-only" for="search-input">搜索内容</label>
         <input
@@ -30,7 +71,7 @@
           placeholder="搜点什么吧"
         >
 
-        <button type="submit" class="search-button" id="search-button">搜索</button>
+        <button type="submit" class="search-button" id="search-button">Search</button>
       </form>
       <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
     </section>

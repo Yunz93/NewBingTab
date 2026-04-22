@@ -14,6 +14,7 @@
   },
   "default_locale": "zh_CN",
   "permissions": ["storage"],
+  "host_permissions": ["https://cn.bing.com/*"],
   "chrome_url_overrides": {
     "newtab": "index.html"
   }
